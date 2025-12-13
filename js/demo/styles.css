@@ -57,6 +57,34 @@ h1 {
   box-shadow: 0 15px 50px rgba(15, 23, 42, 0.05);
 }
 
+.tabs {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.tab {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #0f172a;
+  box-shadow: none;
+}
+
+.tab.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+}
+
+.tab-content.hidden {
+  display: none;
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;

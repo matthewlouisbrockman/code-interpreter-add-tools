@@ -89,6 +89,113 @@ async function handleDeploy(req, res) {
   }
 }
 
+async function loadVercelSdk() {
+  try {
+    const [{ VercelCore: Vercel }, { projectsAddProjectDomain }] =
+      await Promise.all([
+        import('@vercel/sdk/core.js'),
+        import('@vercel/sdk/funcs/projectsAddProjectDomain.js'),
+      ])
+    return { Vercel, projectsAddProjectDomain }
+  } catch (error) {
+    throw new Error(
+      'Failed to load @vercel/sdk. Run "pnpm install" in js/ to install dependencies.'
+    )
+  }
+}
+
+async function handleAddDomain(req, res) {
+  const vercelToken = process.env.VERCEL_TOKEN || process.env.VERCEL_API_KEY
+
+  if (!vercelToken) {
+    replyJson(res, 500, {
+      error: 'Set VERCEL_API_KEY (or VERCEL_TOKEN) in your environment first.',
+    })
+    return
+  }
+
+  const rawBody = await readBody(req)
+  let body
+  try {
+    body = rawBody ? JSON.parse(rawBody) : {}
+  } catch {
+    replyJson(res, 400, { error: 'Request body must be valid JSON.' })
+    return
+  }
+
+  const rootDomain = typeof process.env.VERCEL_ROOT_DOMAIN === 'string'
+    ? process.env.VERCEL_ROOT_DOMAIN.trim()
+    : ''
+  const subdomain =
+    typeof body.subdomain === 'string' ? body.subdomain.trim() : ''
+  const fallbackDomain =
+    typeof body.domain === 'string' ? body.domain.trim() : ''
+
+  const domain =
+    subdomain && rootDomain
+      ? `${subdomain}.${rootDomain}`
+      : fallbackDomain
+
+  const envProject =
+    typeof process.env.VERCEL_PROJECT_NAME === 'string'
+      ? process.env.VERCEL_PROJECT_NAME.trim()
+      : ''
+  const project =
+    typeof body.project === 'string' && body.project.trim()
+      ? body.project.trim()
+      : envProject || undefined
+  const teamId = typeof body.teamId === 'string' ? body.teamId.trim() : undefined
+
+  if (subdomain && !rootDomain) {
+    replyJson(res, 400, {
+      error:
+        'VERCEL_ROOT_DOMAIN must be set in the environment to build the full domain.',
+    })
+    return
+  }
+
+  if (!domain) {
+    replyJson(res, 400, {
+      error:
+        'Provide a subdomain (and set VERCEL_ROOT_DOMAIN) or a full domain.',
+    })
+    return
+  }
+
+  if (!project) {
+    replyJson(res, 400, {
+      error: 'Provide a project idOrName or set VERCEL_PROJECT_NAME in env.',
+    })
+    return
+  }
+  if (!project) {
+    replyJson(res, 400, { error: 'Provide a project idOrName.' })
+    return
+  }
+
+  try {
+    const { Vercel, projectsAddProjectDomain } = await loadVercelSdk()
+
+    const vercel = new Vercel({ bearerToken: vercelToken })
+
+    const result = await projectsAddProjectDomain(vercel, {
+      idOrName: project,
+      teamId,
+      requestBody: { name: domain },
+    })
+
+    replyJson(res, 200, {
+      domain: result?.name || domain,
+      project,
+      teamId: teamId || null,
+      raw: result,
+    })
+  } catch (error) {
+    console.error('Add domain failed', error)
+    replyJson(res, 500, { error: error.message || 'Add domain failed.' })
+  }
+}
+
 async function serveStatic(req, res, pathname) {
   const filePath =
     pathname === '/'
@@ -115,6 +222,11 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'POST' && url.pathname === '/deploy') {
     await handleDeploy(req, res)
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/vercel/domains/add') {
+    await handleAddDomain(req, res)
     return
   }
 

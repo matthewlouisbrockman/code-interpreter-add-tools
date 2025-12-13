@@ -4,6 +4,16 @@ const templateInput = document.getElementById('template-input')
 const output = document.getElementById('output')
 const statusPill = document.getElementById('status-pill')
 
+const vercelBtn = document.getElementById('vercel-btn')
+const vercelDomain = document.getElementById('vercel-domain')
+const vercelProject = document.getElementById('vercel-project')
+const vercelTeam = document.getElementById('vercel-team')
+const vercelOutput = document.getElementById('vercel-output')
+const vercelStatus = document.getElementById('vercel-status')
+
+const tabs = document.querySelectorAll('.tab')
+const tabContents = document.querySelectorAll('.tab-content')
+
 function setStatus(text, state = 'idle') {
   statusPill.textContent = text
   statusPill.classList.remove('busy', 'error')
@@ -11,6 +21,21 @@ function setStatus(text, state = 'idle') {
   if (state === 'busy') statusPill.classList.add('busy')
   if (state === 'error') statusPill.classList.add('error')
 }
+
+function switchTab(nextId) {
+  tabs.forEach((tab) => {
+    const target = tab.dataset.tab
+    const isActive = target === nextId
+    tab.classList.toggle('active', isActive)
+  })
+  tabContents.forEach((content) => {
+    content.classList.toggle('hidden', content.id !== nextId)
+  })
+}
+
+tabs.forEach((tab) => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab))
+})
 
 async function deploy() {
   const code = codeInput.value.trim()
@@ -74,4 +99,61 @@ codeInput.addEventListener('keydown', (event) => {
   if (event.metaKey && event.key.toLowerCase() === 'enter') {
     deploy()
   }
+})
+
+function setVercelStatus(text, state = 'idle') {
+  vercelStatus.textContent = text
+  vercelStatus.classList.remove('busy', 'error')
+
+  if (state === 'busy') vercelStatus.classList.add('busy')
+  if (state === 'error') vercelStatus.classList.add('error')
+}
+
+async function addDomain() {
+  const subdomain = vercelDomain.value.trim()
+  const project = vercelProject.value.trim()
+  const teamId = vercelTeam.value.trim()
+
+  if (!subdomain) {
+    vercelOutput.textContent = 'Subdomain is required.'
+    return
+  }
+
+  vercelBtn.disabled = true
+  setVercelStatus('Adding…', 'busy')
+  vercelOutput.textContent = 'Sending request to Vercel...'
+
+  try {
+    const res = await fetch('/vercel/domains/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        subdomain,
+        project: project || undefined,
+        teamId: teamId || undefined,
+      }),
+    })
+
+    const payload = await res.json()
+
+    if (!res.ok) {
+      throw new Error(payload.error || 'Failed to add domain.')
+    }
+
+    vercelOutput.textContent = JSON.stringify(payload, null, 2)
+    setVercelStatus('Success')
+  } catch (error) {
+    console.error(error)
+    vercelOutput.textContent = `Error: ${error.message}`
+    setVercelStatus('Error', 'error')
+  } finally {
+    vercelBtn.disabled = false
+  }
+}
+
+vercelBtn?.addEventListener('click', (event) => {
+  event.preventDefault()
+  addDomain()
 })

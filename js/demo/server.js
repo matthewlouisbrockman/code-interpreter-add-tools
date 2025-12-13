@@ -40,6 +40,72 @@ async function readBody(req) {
   return data
 }
 
+function getVercelToken() {
+  return process.env.VERCEL_TOKEN || process.env.VERCEL_API_KEY || ''
+}
+
+function getTeamId(override) {
+  const fromEnv =
+    typeof process.env.VERCEL_TEAM_ID === 'string'
+      ? process.env.VERCEL_TEAM_ID.trim()
+      : ''
+  return (override || fromEnv || '').trim() || undefined
+}
+
+function buildVercelUrl(pathname, teamId) {
+  const url = new URL(`https://api.vercel.com${pathname}`)
+  if (teamId) url.searchParams.set('teamId', teamId)
+  return url
+}
+
+function logVercelRequest(label, url, options = {}) {
+  const safeHeaders = { ...(options.headers || {}) }
+  if (safeHeaders.Authorization) {
+    safeHeaders.Authorization = '[redacted]'
+  }
+
+  console.log(`[vercel] ${label}`, {
+    url: url?.toString ? url.toString() : url,
+    method: options.method || 'GET',
+    headers: safeHeaders,
+    body: options.body,
+  })
+}
+
+async function callVercel(pathname, options) {
+  logVercelRequest('request', pathname, options)
+
+  const res = await fetch(pathname, options)
+
+  let data
+  try {
+    data = await res.json()
+  } catch {
+    try {
+      const text = await res.text()
+      data = { message: text || 'Response had no body' }
+    } catch {
+      data = {}
+    }
+  }
+
+  if (!res.ok) {
+    console.error('[vercel] response error', {
+      status: res.status,
+      statusText: res.statusText,
+      body: data,
+    })
+
+    const message =
+      data?.error?.message || data?.message || `Vercel API error ${res.status}`
+    const error = new Error(message)
+    error.raw = data
+    throw error
+  }
+
+  return data
+}
+
 async function handleDeploy(req, res) {
   if (!process.env.E2B_API_KEY) {
     replyJson(res, 500, { error: 'Set E2B_API_KEY in your environment first.' })
@@ -89,24 +155,13 @@ async function handleDeploy(req, res) {
   }
 }
 
-async function loadVercelSdk() {
-  try {
-    const [{ VercelCore: Vercel }, { projectsAddProjectDomain }] =
-      await Promise.all([
-        import('@vercel/sdk/core.js'),
-        import('@vercel/sdk/funcs/projectsAddProjectDomain.js'),
-      ])
-    return { Vercel, projectsAddProjectDomain }
-  } catch (error) {
-    throw new Error(
-      'Failed to load @vercel/sdk. Run "pnpm install" in js/ to install dependencies.'
-    )
-  }
+// Removed domains support; keep handler stubbed to avoid routing errors if called accidentally.
+async function handleAddDomain(req, res) {
+  replyJson(res, 501, { error: 'Domain handling removed in this demo.' })
 }
 
-async function handleAddDomain(req, res) {
-  const vercelToken = process.env.VERCEL_TOKEN || process.env.VERCEL_API_KEY
-
+async function handleCreateProject(req, res) {
+  const vercelToken = getVercelToken()
   if (!vercelToken) {
     replyJson(res, 500, {
       error: 'Set VERCEL_API_KEY (or VERCEL_TOKEN) in your environment first.',
@@ -123,76 +178,56 @@ async function handleAddDomain(req, res) {
     return
   }
 
-  const rootDomain = typeof process.env.VERCEL_ROOT_DOMAIN === 'string'
-    ? process.env.VERCEL_ROOT_DOMAIN.trim()
-    : ''
-  const subdomain =
-    typeof body.subdomain === 'string' ? body.subdomain.trim() : ''
-  const fallbackDomain =
-    typeof body.domain === 'string' ? body.domain.trim() : ''
-
-  const domain =
-    subdomain && rootDomain
-      ? `${subdomain}.${rootDomain}`
-      : fallbackDomain
-
-  const envProject =
-    typeof process.env.VERCEL_PROJECT_NAME === 'string'
-      ? process.env.VERCEL_PROJECT_NAME.trim()
+  const projectName =
+    typeof body.name === 'string' && body.name.trim()
+      ? body.name.trim()
       : ''
-  const project =
-    typeof body.project === 'string' && body.project.trim()
-      ? body.project.trim()
-      : envProject || undefined
-  const teamId = typeof body.teamId === 'string' ? body.teamId.trim() : undefined
+  const teamId = getTeamId(
+    typeof body.teamId === 'string' ? body.teamId.trim() : undefined
+  )
 
-  if (subdomain && !rootDomain) {
+  if (!teamId) {
     replyJson(res, 400, {
-      error:
-        'VERCEL_ROOT_DOMAIN must be set in the environment to build the full domain.',
+      error: 'Set VERCEL_TEAM_ID in env or include teamId in the request body.',
     })
     return
   }
 
-  if (!domain) {
-    replyJson(res, 400, {
-      error:
-        'Provide a subdomain (and set VERCEL_ROOT_DOMAIN) or a full domain.',
-    })
-    return
-  }
-
-  if (!project) {
-    replyJson(res, 400, {
-      error: 'Provide a project idOrName or set VERCEL_PROJECT_NAME in env.',
-    })
-    return
-  }
-  if (!project) {
-    replyJson(res, 400, { error: 'Provide a project idOrName.' })
+  if (!projectName) {
+    replyJson(res, 400, { error: 'Provide a project name.' })
     return
   }
 
   try {
-    const { Vercel, projectsAddProjectDomain } = await loadVercelSdk()
-
-    const vercel = new Vercel({ bearerToken: vercelToken })
-
-    const result = await projectsAddProjectDomain(vercel, {
-      idOrName: project,
+    console.log('[vercel] create project request body', body)
+    console.log('[vercel] create project resolved values', {
+      projectName,
       teamId,
-      requestBody: { name: domain },
+    })
+
+    const url = buildVercelUrl('/v10/projects', teamId)
+    const requestBody = {
+      name: projectName,
+    }
+
+    const result = await callVercel(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${vercelToken}`,
+      },
+      body: JSON.stringify(requestBody),
     })
 
     replyJson(res, 200, {
-      domain: result?.name || domain,
-      project,
+      projectId: result?.id,
+      projectName: result?.name,
       teamId: teamId || null,
       raw: result,
     })
   } catch (error) {
-    console.error('Add domain failed', error)
-    replyJson(res, 500, { error: error.message || 'Add domain failed.' })
+    console.error('Create project failed', error)
+    replyJson(res, 500, { error: error.message || 'Create project failed.' })
   }
 }
 
@@ -227,6 +262,16 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'POST' && url.pathname === '/vercel/domains/add') {
     await handleAddDomain(req, res)
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/vercel/domains/list') {
+    await handleListDomains(req, res)
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/vercel/projects/create') {
+    await handleCreateProject(req, res)
     return
   }
 

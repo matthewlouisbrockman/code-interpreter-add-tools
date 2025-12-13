@@ -59,13 +59,15 @@ E2B_API_KEY=e2b_*** pnpm demo
 
 Then open http://localhost:4173, enter a snippet, and hit **Deploy** to run it in a sandbox. Set `templateId` in the optional field to target a specific template. The demo server also looks for a `.env` one level above `js/` (repo root) if you keep your key there.
 
-### Vercel domain tab
+### Vercel tab (create project)
 
-The second tab lets you add a custom domain to a Vercel project without running code in the sandbox. Provide:
-- `VERCEL_API_KEY` (or `VERCEL_TOKEN`) in `.env` (either in `js/.env` or repo root `.env`)
-- `VERCEL_ROOT_DOMAIN` in `.env` to append to the subdomain (e.g., `myapp.example.com` is created from `myapp` + `VERCEL_ROOT_DOMAIN=example.com`)
-- Subdomain (e.g., `customacmesite`)
-- Optional `VERCEL_PROJECT_NAME` in `.env` to use as the default project if the field is left empty
+The second tab creates a Vercel project (no sandbox execution needed). Set environment vars in `.env` (either `js/.env` or repo root):
+- `VERCEL_API_KEY` (or `VERCEL_TOKEN`)
+- `VERCEL_TEAM_ID` default team (or provide team id in the form)
+
+Form fields:
+- Project name (required)
+- Team ID (optional override)
 - Project id or name (e.g., `my-multi-tenant-app`)
 - Optional Team ID (e.g., `team_1234`)
 

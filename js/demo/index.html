@@ -20,7 +20,7 @@
 
       <div class="tabs">
         <button class="tab active" data-tab="sandbox-tab">Sandbox runner</button>
-        <button class="tab" data-tab="vercel-tab">Vercel domain</button>
+        <button class="tab" data-tab="vercel-tab">Vercel project</button>
       </div>
 
       <section class="panel tab-content" id="sandbox-tab">
@@ -51,48 +51,40 @@ print("hello from E2B")</textarea
 
       <section class="panel tab-content hidden" id="vercel-tab">
         <div class="panel-header">
-          <h2>Add a domain to Vercel</h2>
+          <h2>Create Vercel project</h2>
           <span id="vercel-status" class="pill">Idle</span>
         </div>
 
-        <label class="field">
-          <span>Subdomain (appends to VERCEL_ROOT_DOMAIN)</span>
-          <input
-            id="vercel-domain"
-            type="text"
-            placeholder="acme"
-            autocomplete="off"
-          />
-        </label>
-
-        <label class="field">
-          <span>Project id or name</span>
-          <input
-            id="vercel-project"
-            type="text"
-            placeholder="my-multi-tenant-app (optional if VERCEL_PROJECT_NAME is set)"
-            autocomplete="off"
-          />
-        </label>
-
-        <label class="field">
-          <span>Team ID (optional)</span>
-          <input
-            id="vercel-team"
-            type="text"
-            placeholder="team_1234"
-            autocomplete="off"
-          />
-        </label>
-
-        <div class="actions">
-          <button id="vercel-btn">Add domain</button>
-          <p class="hint">
-            Set <code>VERCEL_API_KEY</code> (or <code>VERCEL_TOKEN</code>), <code>VERCEL_ROOT_DOMAIN</code>, and optionally <code>VERCEL_PROJECT_NAME</code> in your .env (repo root or ./js) before starting the server.
-          </p>
+        <div class="stack">
+          <div class="block">
+            <h3>Create project</h3>
+            <label class="field">
+              <span>Project name</span>
+              <input
+                id="vercel-create-name"
+                type="text"
+                placeholder="my-project"
+                autocomplete="off"
+              />
+            </label>
+            <label class="field">
+              <span>Team ID (optional)</span>
+              <input
+                id="vercel-create-team"
+                type="text"
+                placeholder="team_1234 (optional, overrides env)"
+                autocomplete="off"
+              />
+            </label>
+            <div class="actions">
+              <button id="vercel-create-btn">Create project</button>
+              <p class="hint">
+                Requires <code>VERCEL_API_KEY</code> (or <code>VERCEL_TOKEN</code>) and <code>VERCEL_TEAM_ID</code> in your .env (repo root or ./js), or provide the team id here.
+              </p>
+            </div>
+            <pre id="vercel-create-output" aria-live="polite">Idle.</pre>
+          </div>
         </div>
-
-        <pre id="vercel-output" aria-live="polite">Idle.</pre>
       </section>
 
       <section class="panel">

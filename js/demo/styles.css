@@ -57,6 +57,24 @@ h1 {
   box-shadow: 0 15px 50px rgba(15, 23, 42, 0.05);
 }
 
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.block {
+  border: 1px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.block h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
 .tabs {
   display: inline-flex;
   gap: 8px;

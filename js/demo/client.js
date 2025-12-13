@@ -4,15 +4,24 @@ const templateInput = document.getElementById('template-input')
 const output = document.getElementById('output')
 const statusPill = document.getElementById('status-pill')
 
-const vercelBtn = document.getElementById('vercel-btn')
-const vercelDomain = document.getElementById('vercel-domain')
-const vercelProject = document.getElementById('vercel-project')
-const vercelTeam = document.getElementById('vercel-team')
-const vercelOutput = document.getElementById('vercel-output')
 const vercelStatus = document.getElementById('vercel-status')
+
+const vercelCreateBtn = document.getElementById('vercel-create-btn')
+const vercelCreateName = document.getElementById('vercel-create-name')
+const vercelCreateTeam = document.getElementById('vercel-create-team')
+const vercelCreateOutput = document.getElementById('vercel-create-output')
 
 const tabs = document.querySelectorAll('.tab')
 const tabContents = document.querySelectorAll('.tab-content')
+
+async function parseResponse(res) {
+  try {
+    return await res.json()
+  } catch {
+    const text = await res.text().catch(() => '')
+    return { error: text || 'Unknown error' }
+  }
+}
 
 function setStatus(text, state = 'idle') {
   statusPill.textContent = text
@@ -62,7 +71,7 @@ async function deploy() {
       }),
     })
 
-    const payload = await res.json()
+    const payload = await parseResponse(res)
 
     if (!res.ok) {
       throw new Error(payload.error || 'Failed to deploy.')
@@ -109,51 +118,48 @@ function setVercelStatus(text, state = 'idle') {
   if (state === 'error') vercelStatus.classList.add('error')
 }
 
-async function addDomain() {
-  const subdomain = vercelDomain.value.trim()
-  const project = vercelProject.value.trim()
-  const teamId = vercelTeam.value.trim()
+async function createProject() {
+  const projectName = vercelCreateName.value.trim()
+  const teamId = vercelCreateTeam.value.trim()
 
-  if (!subdomain) {
-    vercelOutput.textContent = 'Subdomain is required.'
+  if (!projectName) {
+    vercelCreateOutput.textContent = 'Project name is required.'
     return
   }
 
-  vercelBtn.disabled = true
-  setVercelStatus('Adding…', 'busy')
-  vercelOutput.textContent = 'Sending request to Vercel...'
+  vercelCreateBtn.disabled = true
+  setVercelStatus('Creating…', 'busy')
+  vercelCreateOutput.textContent = 'Creating project...'
 
   try {
-    const res = await fetch('/vercel/domains/add', {
+    const res = await fetch('/vercel/projects/create', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        subdomain,
-        project: project || undefined,
+        name: projectName,
         teamId: teamId || undefined,
       }),
     })
 
-    const payload = await res.json()
-
+    const payload = await parseResponse(res)
     if (!res.ok) {
-      throw new Error(payload.error || 'Failed to add domain.')
+      throw new Error(payload.error || 'Failed to create project.')
     }
 
-    vercelOutput.textContent = JSON.stringify(payload, null, 2)
+    vercelCreateOutput.textContent = JSON.stringify(payload, null, 2)
     setVercelStatus('Success')
   } catch (error) {
     console.error(error)
-    vercelOutput.textContent = `Error: ${error.message}`
+    vercelCreateOutput.textContent = `Error: ${error.message}`
     setVercelStatus('Error', 'error')
   } finally {
-    vercelBtn.disabled = false
+    vercelCreateBtn.disabled = false
   }
 }
 
-vercelBtn?.addEventListener('click', (event) => {
+vercelCreateBtn?.addEventListener('click', (event) => {
   event.preventDefault()
-  addDomain()
+  createProject()
 })
+
+// Removed list/add domain flows per latest request

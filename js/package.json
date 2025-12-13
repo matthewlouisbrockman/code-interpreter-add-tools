@@ -36,7 +36,8 @@
     "test:deno": "deno test tests/runtimes/deno/ --allow-net --allow-read --allow-env --unstable-sloppy-imports --trace-leaks",
     "generate-ref": "./scripts/generate_sdk_ref.sh",
     "lint": "eslint src/ tests/",
-    "format": "prettier --write src/ tests/ example.mts"
+    "format": "prettier --write src/ tests/ example.mts",
+    "demo": "pnpm build && node demo/server.js"
   },
   "devDependencies": {
     "@types/node": "^20.19.19",
@@ -74,6 +75,7 @@
     "defaults"
   ],
   "dependencies": {
+    "@e2b/code-interpreter": "^2.3.3",
     "e2b": "^2.8.3"
   }
 }

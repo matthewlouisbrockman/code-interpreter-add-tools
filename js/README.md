@@ -48,3 +48,13 @@ Visit [E2B documentation](https://e2b.dev/docs).
 
 ### 5. E2B cookbook
 Visit our [Cookbook](https://github.com/e2b-dev/e2b-cookbook/tree/main) to get inspired by examples with different LLMs and AI frameworks.
+
+## Quick Sandbox Demo UI
+
+A tiny demo UI is available in `demo/` to spin up a sandbox from the browser.
+
+```
+E2B_API_KEY=e2b_*** pnpm demo
+```
+
+Then open http://localhost:4173, enter a snippet, and hit **Deploy** to run it in a sandbox. Set `templateId` in the optional field to target a specific template. The demo server also looks for a `.env` one level above `js/` (repo root) if you keep your key there.

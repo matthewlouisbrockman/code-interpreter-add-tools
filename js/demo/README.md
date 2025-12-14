@@ -4,6 +4,9 @@ A demo application showcasing:
 1. Running code in E2B sandboxes
 2. Deploying files to Vercel with custom subdomains
 
+wip
+<img width="970" height="362" alt="Screenshot 2025-12-13 at 6 53 54 PM" src="https://github.com/user-attachments/assets/35e71588-8883-47b4-b10c-9947af003d83" />
+
 ## Environment Variables
 
 Create a `.env` file in the repository root or in the `js/` directory:

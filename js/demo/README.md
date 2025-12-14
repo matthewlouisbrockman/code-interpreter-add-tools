@@ -7,9 +7,9 @@ A demo application showcasing:
 Demo of using it:
 https://github.com/user-attachments/assets/77043ff7-8850-4221-9732-792818001a34
 
-
-wip
-<img width="970" height="362" alt="Screenshot 2025-12-13 at 6 53 54 PM" src="https://github.com/user-attachments/assets/35e71588-8883-47b4-b10c-9947af003d83" />
+3. one thing im realizing im not sure of is whether i even used their new stuff or if i used their old stuff.
+4. https://vercel.com/platforms/docs/multi-tenant-platforms/quickstart is a way to have the user add the custom domain to vercel, in hindisght i shoulda done that but ran out of time. one of the things i'm realizing now is that you can have the user set up their domain, vercel token, etc and just use their vercel, right now it's based on the env var for running the e2b sandbox code.
+5. 
 
 ## Environment Variables
 

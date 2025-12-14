@@ -15,6 +15,7 @@ import {
 } from './utils'
 import { JUPYTER_PORT, DEFAULT_TIMEOUT_MS } from './consts'
 import { deployToVercel as deployToVercelHelper } from './vercel'
+import type { VercelDeploymentResult } from './vercel'
 
 /**
  * Represents a context for code execution.
@@ -96,6 +97,40 @@ export interface CreateCodeContextOpts {
    * @default 30_000 // 30 seconds
    */
   requestTimeoutMs?: number
+}
+
+/**
+ * Options for deploying code output to Vercel.
+ */
+export interface DeployToVercelOpts {
+  /**
+   * Code to display on the deployed page.
+   */
+  code: string
+  /**
+   * Name for the deployment (used as subdomain).
+   */
+  name: string
+  /**
+   * Optional custom message to display.
+   */
+  message?: string
+  /**
+   * Vercel API token.
+   */
+  vercelToken: string
+  /**
+   * Vercel team ID.
+   */
+  teamId: string
+  /**
+   * Root domain for subdomain (e.g., 'example.com').
+   */
+  rootDomain: string
+  /**
+   * Optional project ID to reuse existing project.
+   */
+  projectId?: string
 }
 
 /**
@@ -445,42 +480,9 @@ export class Sandbox extends BaseSandbox {
    *
    * @returns deployment information including the domain URL.
    */
-  async deployToVercel(opts: {
-    /**
-     * Code to display on the deployed page.
-     */
-    code: string
-    /**
-     * Name for the deployment (used as subdomain).
-     */
-    name: string
-    /**
-     * Optional custom message to display.
-     */
-    message?: string
-    /**
-     * Vercel API token.
-     */
-    vercelToken: string
-    /**
-     * Vercel team ID.
-     */
-    teamId: string
-    /**
-     * Root domain for subdomain (e.g., 'example.com').
-     */
-    rootDomain: string
-    /**
-     * Optional project ID to reuse existing project.
-     */
-    projectId?: string
-  }): Promise<{
-    projectId: string
-    projectName: string
-    teamId: string
-    domain: string | null
-    deployment: any
-  }> {
+  static async deployToVercel(
+    opts: DeployToVercelOpts
+  ): Promise<VercelDeploymentResult> {
     const customText = opts.message
       ? `${opts.message}\n\nCode:\n${opts.code}`
       : `Code:\n${opts.code}`
@@ -493,5 +495,11 @@ export class Sandbox extends BaseSandbox {
       rootDomain: opts.rootDomain,
       projectId: opts.projectId,
     })
+  }
+
+  async deployToVercel(
+    opts: DeployToVercelOpts
+  ): Promise<VercelDeploymentResult> {
+    return Sandbox.deployToVercel(opts)
   }
 }

@@ -1,7 +1,12 @@
 export * from 'e2b'
 
 export { Sandbox } from './sandbox'
-export type { Context, RunCodeOpts, CreateCodeContextOpts } from './sandbox'
+export type {
+  Context,
+  RunCodeOpts,
+  CreateCodeContextOpts,
+  DeployToVercelOpts,
+} from './sandbox'
 export { deployToVercel } from './vercel'
 export type { VercelDeploymentOptions, VercelDeploymentResult } from './vercel'
 export type {

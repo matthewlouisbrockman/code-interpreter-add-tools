@@ -1,5 +1,10 @@
 const { readBody, replyJson } = require('../lib/http')
-const { getTeamId, getVercelToken } = require('../lib/vercel')
+const {
+  buildVercelUrl,
+  callVercel,
+  getTeamId,
+  getVercelToken,
+} = require('../lib/vercel')
 
 async function handleDeployFiles(req, res) {
   const vercelToken = getVercelToken()
@@ -125,9 +130,27 @@ async function handleDeployFiles(req, res) {
           installCommand: 'npm install',
           outputDirectory: '.next',
         },
-        alias: domain ? [domain] : undefined,
       },
     })
+
+    if (domain && deployment?.id) {
+      // Use the project from deployment if projectId wasn't provided
+      const finalProjectId = projectId || deployment.projectId
+
+      await ensureDomainOwnership({
+        domain,
+        teamId,
+        vercelToken,
+      })
+      await ensureDomainOnProject({
+        domain,
+        projectId: finalProjectId,
+        teamId,
+        vercelToken,
+      })
+      // Note: assignAliasToDeployment is not needed - adding domain to project
+      // automatically makes it available for the deployment
+    }
 
     replyJson(res, 200, {
       deployment,
@@ -141,3 +164,57 @@ async function handleDeployFiles(req, res) {
 }
 
 module.exports = { handleDeployFiles }
+
+async function ensureDomainOwnership({ domain, teamId, vercelToken }) {
+  // Skip for subdomains - they can be added directly to projects
+  // Only root domains need to be added via /v7/domains
+  const parts = domain.split('.')
+  const isSubdomain = parts.length > 2
+  if (isSubdomain) {
+    console.log('[vercel] skipping ownership check for subdomain:', domain)
+    return
+  }
+
+  //WTF ITS v7 WHY IS https://vercel.com/docs/rest-api/reference/endpoints/domains/add-an-existing-domain-to-the-vercel-platform INSANE
+  const url = buildVercelUrl('/v7/domains', teamId)
+  try {
+    await callVercel(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${vercelToken}`,
+      },
+      body: JSON.stringify({ name: domain }),
+    })
+  } catch (error) {
+    // Already exists/owned
+    if (
+      error?.raw?.error?.code === 'domain_already_exists' ||
+      error?.raw?.error?.code === 'forbidden' ||
+      error?.raw?.error?.code === 'domain_conflict'
+    ) {
+      console.warn('[vercel] domain ownership check skipped:', error?.raw?.error?.code, domain)
+      return
+    }
+    throw error
+  }
+}
+
+async function ensureDomainOnProject({ domain, projectId, teamId, vercelToken }) {
+  if (!projectId || !domain) return
+
+  const url = buildVercelUrl(`/v10/projects/${projectId}/domains`, teamId)
+  try {
+    await callVercel(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${vercelToken}`,
+      },
+      body: JSON.stringify({ name: domain }),
+    })
+  } catch (error) {
+    if (error?.raw?.error?.code === 'domain_already_added') return
+    throw error
+  }
+}

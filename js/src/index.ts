@@ -8,7 +8,10 @@ export type {
   DeployToVercelOpts,
 } from './sandbox'
 export { deployToVercel } from './vercel'
-export type { VercelDeploymentOptions, VercelDeploymentResult } from './vercel'
+export type {
+  VercelDeploymentOptions,
+  VercelDeploymentResult,
+} from './vercel'
 export type {
   Logs,
   ExecutionError,

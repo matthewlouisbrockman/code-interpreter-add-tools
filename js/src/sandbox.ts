@@ -108,6 +108,10 @@ export interface DeployToVercelOpts {
    */
   code: string
   /**
+   * Optional files to deploy. When provided, these are used instead of the default template.
+   */
+  files?: Array<{ file: string; data: string }>
+  /**
    * Name for the deployment (used as subdomain).
    */
   name: string
@@ -483,13 +487,13 @@ export class Sandbox extends BaseSandbox {
   static async deployToVercel(
     opts: DeployToVercelOpts
   ): Promise<VercelDeploymentResult> {
-    const customText = opts.message
-      ? `${opts.message}\n\nCode:\n${opts.code}`
-      : `Code:\n${opts.code}`
+    const customText = opts.message || undefined
 
     return await deployToVercelHelper({
       name: opts.name,
       customText,
+      files: opts.files,
+      code: opts.code,
       vercelToken: opts.vercelToken,
       teamId: opts.teamId,
       rootDomain: opts.rootDomain,

@@ -10,6 +10,10 @@ export interface VercelDeploymentOptions {
    */
   name: string
   /**
+   * Optional code snippet to render on the deployed page.
+   */
+  code?: string
+  /**
    * Custom text to display on the deployed page.
    */
   customText?: string
@@ -46,6 +50,35 @@ export interface VercelDeploymentResult {
   deployment: any
 }
 
+async function findProjectId(opts: {
+  name: string
+  teamId: string
+  vercelToken: string
+}): Promise<string | null> {
+  const url = new URL(`https://api.vercel.com/v9/projects/${opts.name}`)
+  url.searchParams.set('teamId', opts.teamId)
+
+  const res = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${opts.vercelToken}`,
+    },
+  })
+
+  if (res.status === 404) {
+    return null
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch Vercel project ${opts.name}: ${res.status} ${res.statusText}`
+    )
+  }
+
+  const data = await res.json()
+  return data?.id || data?.projectId || null
+}
+
 /**
  * Deploy files to Vercel with custom subdomain.
  */
@@ -57,6 +90,14 @@ export async function deployToVercel(
   const deploymentName = opts.name
   const subdomain = opts.name
   const domain = `${subdomain}.${opts.rootDomain}`
+
+  const existingProjectId =
+    opts.projectId ||
+    (await findProjectId({
+      name: deploymentName,
+      teamId: opts.teamId,
+      vercelToken: opts.vercelToken,
+    }))
 
   // Use provided files or default Next.js template
   const files =
@@ -73,7 +114,7 @@ export async function deployToVercel(
     requestBody: {
       name: deploymentName,
       target: 'production',
-      project: opts.projectId,
+      project: existingProjectId || undefined,
       files,
       projectSettings: {
         framework: 'nextjs',
@@ -84,7 +125,7 @@ export async function deployToVercel(
     },
   })
 
-  const finalProjectId = opts.projectId || deployment.projectId
+  const finalProjectId = existingProjectId || deployment.projectId
 
   // Add domain to project if we have a project ID
   if (domain && deployment?.id && finalProjectId) {
@@ -115,8 +156,12 @@ export async function deployToVercel(
  */
 function createDefaultFiles(opts: {
   deploymentName: string
+  code?: string
   customText?: string
 }): Array<{ file: string; data: string }> {
+  const escapedCode =
+    opts.code?.replace(/`/g, '\\`').replace(/\$\{/g, '\\${') ?? ''
+
   return [
     {
       file: 'package.json',
@@ -142,7 +187,16 @@ function createDefaultFiles(opts: {
   return (
     <main style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
       <h1>${opts.deploymentName}</h1>
-      ${opts.customText ? `<p style={{ whiteSpace: 'pre-wrap' }}>${opts.customText}</p>` : ''}
+      ${
+        opts.customText
+          ? `<p style={{ whiteSpace: 'pre-wrap' }}>${opts.customText}</p>`
+          : ''
+      }
+      ${
+        opts.code
+          ? `<pre style={{ whiteSpace: 'pre-wrap', background: '#111827', color: '#e5e7eb', padding: '1rem', borderRadius: '0.5rem' }}>{\`${escapedCode}\`}</pre>`
+          : ''
+      }
       <p>This page was deployed via E2B Sandbox.</p>
     </main>
   )

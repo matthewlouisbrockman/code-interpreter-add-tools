@@ -302,16 +302,34 @@ async function handleDeployFiles(req, res) {
       ? body.files
       : [
           {
-            file: 'index.html',
-            data:
-              '<html><body><h1>Hello from the Vercel deploy demo!</h1></body></html>',
-          },
-          {
             file: 'package.json',
             data: JSON.stringify({
               name: 'demo-deployment',
               version: '1.0.0',
+              private: true,
+              scripts: {
+                dev: 'next dev',
+                build: 'next build',
+                start: 'next start',
+              },
+              dependencies: {
+                next: '14.2.15',
+                react: '18.3.1',
+                'react-dom': '18.3.1',
+              },
             }),
+          },
+          {
+            file: 'pages/index.js',
+            data: `export default function Home() {
+  return (
+    <main style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
+      <h1>Hello from the Vercel deploy demo!</h1>
+      <p>This page was deployed via the demo deploy endpoint.</p>
+    </main>
+  )
+}
+`,
           },
         ]
 

@@ -67,6 +67,10 @@ async function handleDeployFiles(req, res) {
     typeof body.projectId === 'string' && body.projectId.trim()
       ? body.projectId.trim()
       : undefined
+  const customText =
+    typeof body.customText === 'string' && body.customText.trim()
+      ? body.customText.trim()
+      : ''
 
   const files =
     Array.isArray(body.files) && body.files.length > 0
@@ -95,7 +99,8 @@ async function handleDeployFiles(req, res) {
             data: `export default function Home() {
   return (
     <main style={{ fontFamily: 'sans-serif', padding: '2rem' }}>
-      <h1>Hello from the Vercel deploy demo!</h1>
+      <h1>${deploymentName}</h1>
+      ${customText ? `<p>${customText}</p>` : ''}
       <p>This page was deployed via the demo deploy endpoint.</p>
     </main>
   )
@@ -154,6 +159,8 @@ async function handleDeployFiles(req, res) {
 
     replyJson(res, 200, {
       deployment,
+      projectId: deployment.projectId || projectId,
+      projectName: deployment.name,
       alias: domain ? domain : null,
       domain: domain || null,
     })

@@ -84,6 +84,53 @@ print("hello from E2B")</textarea
             </div>
             <pre id="vercel-create-output" aria-live="polite">Idle.</pre>
           </div>
+
+          <div class="block">
+            <h3>Deploy files</h3>
+            <label class="field">
+              <span>Deployment name</span>
+              <input
+                id="vercel-deploy-name"
+                type="text"
+                placeholder="my-deployment"
+                autocomplete="off"
+              />
+            </label>
+            <label class="field">
+              <span>Project ID (optional, to reuse existing project)</span>
+              <input
+                id="vercel-deploy-project"
+                type="text"
+                placeholder="project_123"
+                autocomplete="off"
+              />
+            </label>
+            <label class="field">
+              <span>Subdomain (will append to VERCEL_ROOT_DOMAIN)</span>
+              <input
+                id="vercel-deploy-subdomain"
+                type="text"
+                placeholder="customer1"
+                autocomplete="off"
+              />
+            </label>
+            <label class="field">
+              <span>Team ID (optional)</span>
+              <input
+                id="vercel-deploy-team"
+                type="text"
+                placeholder="team_1234 (optional, overrides env)"
+                autocomplete="off"
+              />
+            </label>
+            <div class="actions">
+              <button id="vercel-deploy-btn">Deploy files</button>
+              <p class="hint">
+                If subdomain is set, it will alias to <code>&lt;subdomain&gt;.VERCEL_ROOT_DOMAIN</code>. Files default to a simple HTML + package.json unless overridden server-side.
+              </p>
+            </div>
+            <pre id="vercel-deploy-output" aria-live="polite">Idle.</pre>
+          </div>
         </div>
       </section>
 

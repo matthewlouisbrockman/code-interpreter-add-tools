@@ -64,10 +64,13 @@ Then open http://localhost:4173, enter a snippet, and hit **Deploy** to run it i
 The second tab creates a Vercel project (no sandbox execution needed). Set environment vars in `.env` (either `js/.env` or repo root):
 - `VERCEL_API_KEY` (or `VERCEL_TOKEN`)
 - `VERCEL_TEAM_ID` default team (or provide team id in the form)
+- Optional `VERCEL_ROOT_DOMAIN` to alias deployments via subdomain
 
 Form fields:
 - Project name (required)
 - Team ID (optional override)
+
+There’s also a simple “Deploy files” action that ships a tiny HTML + package.json to Vercel, optionally associating it with an existing project and aliasing to `<subdomain>.VERCEL_ROOT_DOMAIN`.
 - Project id or name (e.g., `my-multi-tenant-app`)
 - Optional Team ID (e.g., `team_1234`)
 

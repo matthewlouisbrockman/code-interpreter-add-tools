@@ -160,6 +160,10 @@ async function handleAddDomain(req, res) {
   replyJson(res, 501, { error: 'Domain handling removed in this demo.' })
 }
 
+async function handleListDomains(req, res) {
+  replyJson(res, 501, { error: 'List domains removed in this demo.' })
+}
+
 async function handleCreateProject(req, res) {
   const vercelToken = getVercelToken()
   if (!vercelToken) {
@@ -231,6 +235,127 @@ async function handleCreateProject(req, res) {
   }
 }
 
+async function handleDeployFiles(req, res) {
+  const vercelToken = getVercelToken()
+  if (!vercelToken) {
+    replyJson(res, 500, {
+      error: 'Set VERCEL_API_KEY (or VERCEL_TOKEN) in your environment first.',
+    })
+    return
+  }
+
+  const rawBody = await readBody(req)
+  let body
+  try {
+    body = rawBody ? JSON.parse(rawBody) : {}
+  } catch {
+    replyJson(res, 400, { error: 'Request body must be valid JSON.' })
+    return
+  }
+
+  const rootDomain =
+    typeof process.env.VERCEL_ROOT_DOMAIN === 'string'
+      ? process.env.VERCEL_ROOT_DOMAIN.trim()
+      : ''
+  const subdomain =
+    typeof body.subdomain === 'string' && body.subdomain.trim()
+      ? body.subdomain.trim()
+      : ''
+  const customDomain =
+    typeof body.domain === 'string' && body.domain.trim()
+      ? body.domain.trim()
+      : ''
+  const domain =
+    subdomain && rootDomain
+      ? `${subdomain}.${rootDomain}`
+      : customDomain || undefined
+
+  if (subdomain && !rootDomain) {
+    replyJson(res, 400, {
+      error:
+        'Set VERCEL_ROOT_DOMAIN in env to append the subdomain (or send a full domain).',
+    })
+    return
+  }
+
+  const teamId = getTeamId(
+    typeof body.teamId === 'string' ? body.teamId.trim() : undefined
+  )
+  if (!teamId) {
+    replyJson(res, 400, {
+      error: 'Set VERCEL_TEAM_ID in env or include teamId in the request body.',
+    })
+    return
+  }
+
+  const deploymentName =
+    typeof body.deploymentName === 'string' && body.deploymentName.trim()
+      ? body.deploymentName.trim()
+      : `deploy-${Date.now()}`
+  const projectId =
+    typeof body.projectId === 'string' && body.projectId.trim()
+      ? body.projectId.trim()
+      : undefined
+
+  const files =
+    Array.isArray(body.files) && body.files.length > 0
+      ? body.files
+      : [
+          {
+            file: 'index.html',
+            data:
+              '<html><body><h1>Hello from the Vercel deploy demo!</h1></body></html>',
+          },
+          {
+            file: 'package.json',
+            data: JSON.stringify({
+              name: 'demo-deployment',
+              version: '1.0.0',
+            }),
+          },
+        ]
+
+  try {
+    const { Vercel } = await import('@vercel/sdk')
+    const vercel = new Vercel({ bearerToken: vercelToken })
+
+    console.log('[vercel] deploy files request body', {
+      deploymentName,
+      projectId,
+      domain,
+      teamId,
+      filesCount: files.length,
+    })
+
+    const deployment = await vercel.deployments.createDeployment({
+      teamId,
+      skipAutoDetectionConfirmation: '1',
+      requestBody: {
+        name: deploymentName,
+        target: 'production',
+        project: projectId,
+        files,
+        projectSettings: {
+          framework: 'nextjs',
+          buildCommand: 'npm run build',
+          installCommand: 'npm install',
+          outputDirectory: '.next',
+        },
+        alias: domain ? [domain] : undefined,
+      },
+    })
+
+    replyJson(res, 200, {
+      deployment,
+      alias: domain ? domain : null,
+      domain: domain || null,
+    })
+  } catch (error) {
+    console.error('Deploy files failed', error)
+    replyJson(res, 500, { error: error.message || 'Deploy files failed.' })
+  }
+}
+
 async function serveStatic(req, res, pathname) {
   const filePath =
     pathname === '/'
@@ -272,6 +397,11 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'POST' && url.pathname === '/vercel/projects/create') {
     await handleCreateProject(req, res)
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/vercel/deploy') {
+    await handleDeployFiles(req, res)
     return
   }
 

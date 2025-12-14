@@ -11,6 +11,13 @@ const vercelCreateName = document.getElementById('vercel-create-name')
 const vercelCreateTeam = document.getElementById('vercel-create-team')
 const vercelCreateOutput = document.getElementById('vercel-create-output')
 
+const vercelDeployBtn = document.getElementById('vercel-deploy-btn')
+const vercelDeployName = document.getElementById('vercel-deploy-name')
+const vercelDeployProject = document.getElementById('vercel-deploy-project')
+const vercelDeploySubdomain = document.getElementById('vercel-deploy-subdomain')
+const vercelDeployTeam = document.getElementById('vercel-deploy-team')
+const vercelDeployOutput = document.getElementById('vercel-deploy-output')
+
 const tabs = document.querySelectorAll('.tab')
 const tabContents = document.querySelectorAll('.tab-content')
 
@@ -162,4 +169,45 @@ vercelCreateBtn?.addEventListener('click', (event) => {
   createProject()
 })
 
-// Removed list/add domain flows per latest request
+async function deployFiles() {
+  const deploymentName = vercelDeployName.value.trim()
+  const projectId = vercelDeployProject.value.trim()
+  const subdomain = vercelDeploySubdomain.value.trim()
+  const teamId = vercelDeployTeam.value.trim()
+
+  vercelDeployBtn.disabled = true
+  setVercelStatus('Deploying…', 'busy')
+  vercelDeployOutput.textContent = 'Creating deployment...'
+
+  try {
+    const res = await fetch('/vercel/deploy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deploymentName: deploymentName || undefined,
+        projectId: projectId || undefined,
+        subdomain: subdomain || undefined,
+        teamId: teamId || undefined,
+      }),
+    })
+
+    const payload = await parseResponse(res)
+    if (!res.ok) {
+      throw new Error(payload.error || 'Failed to deploy.')
+    }
+
+    vercelDeployOutput.textContent = JSON.stringify(payload, null, 2)
+    setVercelStatus('Success')
+  } catch (error) {
+    console.error(error)
+    vercelDeployOutput.textContent = `Error: ${error.message}`
+    setVercelStatus('Error', 'error')
+  } finally {
+    vercelDeployBtn.disabled = false
+  }
+}
+
+vercelDeployBtn?.addEventListener('click', (event) => {
+  event.preventDefault()
+  deployFiles()
+})

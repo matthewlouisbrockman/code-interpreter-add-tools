@@ -14,6 +14,7 @@ import {
   readLines,
 } from './utils'
 import { JUPYTER_PORT, DEFAULT_TIMEOUT_MS } from './consts'
+import { deployToVercel as deployToVercelHelper } from './vercel'
 
 /**
  * Represents a context for code execution.
@@ -435,5 +436,62 @@ export class Sandbox extends BaseSandbox {
     } catch (error) {
       throw formatRequestTimeoutError(error)
     }
+  }
+
+  /**
+   * Deploy code to a Vercel domain.
+   *
+   * @param opts options for deploying to Vercel.
+   *
+   * @returns deployment information including the domain URL.
+   */
+  async deployToVercel(opts: {
+    /**
+     * Code to display on the deployed page.
+     */
+    code: string
+    /**
+     * Name for the deployment (used as subdomain).
+     */
+    name: string
+    /**
+     * Optional custom message to display.
+     */
+    message?: string
+    /**
+     * Vercel API token.
+     */
+    vercelToken: string
+    /**
+     * Vercel team ID.
+     */
+    teamId: string
+    /**
+     * Root domain for subdomain (e.g., 'example.com').
+     */
+    rootDomain: string
+    /**
+     * Optional project ID to reuse existing project.
+     */
+    projectId?: string
+  }): Promise<{
+    projectId: string
+    projectName: string
+    teamId: string
+    domain: string | null
+    deployment: any
+  }> {
+    const customText = opts.message
+      ? `${opts.message}\n\nCode:\n${opts.code}`
+      : `Code:\n${opts.code}`
+
+    return await deployToVercelHelper({
+      name: opts.name,
+      customText,
+      vercelToken: opts.vercelToken,
+      teamId: opts.teamId,
+      rootDomain: opts.rootDomain,
+      projectId: opts.projectId,
+    })
   }
 }

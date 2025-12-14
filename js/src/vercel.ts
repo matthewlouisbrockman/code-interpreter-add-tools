@@ -2,6 +2,8 @@
  * Vercel deployment utilities for E2B Sandbox integration.
  */
 
+import { Vercel } from '@vercel/sdk'
+
 export interface VercelDeploymentOptions {
   /**
    * Deployment name (used as subdomain and project name).
@@ -50,7 +52,6 @@ export interface VercelDeploymentResult {
 export async function deployToVercel(
   opts: VercelDeploymentOptions
 ): Promise<VercelDeploymentResult> {
-  const { Vercel } = await import('@vercel/sdk')
   const vercel = new Vercel({ bearerToken: opts.vercelToken })
 
   const deploymentName = opts.name

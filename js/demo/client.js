@@ -16,6 +16,12 @@ const vercelDeployName = document.getElementById('vercel-deploy-name')
 const vercelDeployMessage = document.getElementById('vercel-deploy-message')
 const vercelDeployOutput = document.getElementById('vercel-deploy-output')
 
+const sandboxDeployBtn = document.getElementById('sandbox-deploy-btn')
+const sandboxDeployCode = document.getElementById('sandbox-deploy-code')
+const sandboxDeployName = document.getElementById('sandbox-deploy-name')
+const sandboxDeployStatus = document.getElementById('sandbox-deploy-status')
+const sandboxDeployOutput = document.getElementById('sandbox-deploy-output')
+
 // Store project/team IDs from responses
 let lastProjectId = null
 let lastTeamId = null
@@ -220,4 +226,67 @@ async function deployFiles() {
 vercelDeployBtn?.addEventListener('click', (event) => {
   event.preventDefault()
   deployFiles()
+})
+
+function setSandboxDeployStatus(text, state = 'idle') {
+  sandboxDeployStatus.textContent = text
+  sandboxDeployStatus.classList.remove('busy', 'error')
+
+  if (state === 'busy') sandboxDeployStatus.classList.add('busy')
+  if (state === 'error') sandboxDeployStatus.classList.add('error')
+}
+
+async function sandboxDeploy() {
+  const code = sandboxDeployCode.value.trim()
+  const name = sandboxDeployName.value.trim()
+
+  if (!code) {
+    sandboxDeployOutput.textContent = 'Code is required.'
+    return
+  }
+
+  if (!name) {
+    sandboxDeployOutput.textContent = 'Deployment name is required.'
+    return
+  }
+
+  sandboxDeployBtn.disabled = true
+  setSandboxDeployStatus('Running…', 'busy')
+  sandboxDeployOutput.textContent = 'Running code in sandbox and deploying...'
+
+  try {
+    const res = await fetch('/sandbox/deploy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code,
+        name,
+        projectId: lastProjectId || undefined,
+        teamId: lastTeamId || undefined,
+      }),
+    })
+
+    const payload = await parseResponse(res)
+    if (!res.ok) {
+      throw new Error(payload.error || 'Failed to deploy from sandbox.')
+    }
+
+    // Store IDs from response for next deployment
+    if (payload.projectId) lastProjectId = payload.projectId
+    if (payload.teamId) lastTeamId = payload.teamId
+
+    sandboxDeployOutput.textContent = JSON.stringify(payload, null, 2)
+    setSandboxDeployStatus('Success')
+  } catch (error) {
+    console.error(error)
+    sandboxDeployOutput.textContent = `Error: ${error.message}`
+    setSandboxDeployStatus('Error', 'error')
+  } finally {
+    sandboxDeployBtn.disabled = false
+  }
+}
+
+sandboxDeployBtn?.addEventListener('click', (event) => {
+  event.preventDefault()
+  sandboxDeploy()
 })

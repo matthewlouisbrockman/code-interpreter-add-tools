@@ -6,6 +6,7 @@ const { handleDeploy } = require('./handlers/deploy')
 const { handleAddDomain, handleListDomains } = require('./handlers/domains')
 const { handleCreateProject } = require('./handlers/create-project')
 const { handleDeployFiles } = require('./handlers/deploy-files')
+const { handleSandboxDeploy } = require('./handlers/sandbox-deploy')
 const { serveStatic } = require('./lib/static')
 
 // Load env from both the current folder and the repo root (one level above ../..).
@@ -40,6 +41,11 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'POST' && url.pathname === '/vercel/deploy') {
     await handleDeployFiles(req, res)
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/sandbox/deploy') {
+    await handleSandboxDeploy(req, res)
     return
   }
 

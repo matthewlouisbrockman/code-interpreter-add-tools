@@ -20,6 +20,7 @@
 
       <div class="tabs">
         <button class="tab active" data-tab="sandbox-tab">Sandbox runner</button>
+        <button class="tab" data-tab="sandbox-deploy-tab">Sandbox Deploy</button>
         <button class="tab" data-tab="vercel-tab">Vercel project</button>
       </div>
 
@@ -47,6 +48,38 @@ print("hello from E2B")</textarea
             Make sure <code>E2B_API_KEY</code> is set before starting the server.
           </p>
         </div>
+      </section>
+
+      <section class="panel tab-content hidden" id="sandbox-deploy-tab">
+        <div class="panel-header">
+          <h2>Sandbox Deploy</h2>
+          <span id="sandbox-deploy-status" class="pill">Idle</span>
+        </div>
+
+        <label class="field">
+          <span>Code to run in sandbox and deploy</span>
+          <textarea id="sandbox-deploy-code" rows="6" spellcheck="false">
+print("Hello from deployed sandbox!")</textarea>
+        </label>
+
+        <label class="field">
+          <span>Deployment name (subdomain)</span>
+          <input
+            id="sandbox-deploy-name"
+            type="text"
+            placeholder="my-sandbox-deploy"
+            autocomplete="off"
+          />
+        </label>
+
+        <div class="actions">
+          <button id="sandbox-deploy-btn">Run & Deploy</button>
+          <p class="hint">
+            Runs code in E2B sandbox, then deploys the output to <code>&lt;name&gt;.VERCEL_ROOT_DOMAIN</code>
+          </p>
+        </div>
+
+        <pre id="sandbox-deploy-output" aria-live="polite">Idle.</pre>
       </section>
 
       <section class="panel tab-content hidden" id="vercel-tab">

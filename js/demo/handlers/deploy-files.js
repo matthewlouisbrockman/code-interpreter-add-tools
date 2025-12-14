@@ -161,6 +161,7 @@ async function handleDeployFiles(req, res) {
       deployment,
       projectId: deployment.projectId || projectId,
       projectName: deployment.name,
+      teamId: teamId,
       alias: domain ? domain : null,
       domain: domain || null,
     })

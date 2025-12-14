@@ -13,10 +13,12 @@ const vercelCreateOutput = document.getElementById('vercel-create-output')
 
 const vercelDeployBtn = document.getElementById('vercel-deploy-btn')
 const vercelDeployName = document.getElementById('vercel-deploy-name')
-const vercelDeployProject = document.getElementById('vercel-deploy-project')
-const vercelDeploySubdomain = document.getElementById('vercel-deploy-subdomain')
-const vercelDeployTeam = document.getElementById('vercel-deploy-team')
+const vercelDeployMessage = document.getElementById('vercel-deploy-message')
 const vercelDeployOutput = document.getElementById('vercel-deploy-output')
+
+// Store project/team IDs from responses
+let lastProjectId = null
+let lastTeamId = null
 
 const tabs = document.querySelectorAll('.tab')
 const tabContents = document.querySelectorAll('.tab-content')
@@ -170,10 +172,13 @@ vercelCreateBtn?.addEventListener('click', (event) => {
 })
 
 async function deployFiles() {
-  const deploymentName = vercelDeployName.value.trim()
-  const projectId = vercelDeployProject.value.trim()
-  const subdomain = vercelDeploySubdomain.value.trim()
-  const teamId = vercelDeployTeam.value.trim()
+  const name = vercelDeployName.value.trim()
+  const message = vercelDeployMessage.value.trim()
+
+  if (!name) {
+    vercelDeployOutput.textContent = 'Name is required.'
+    return
+  }
 
   vercelDeployBtn.disabled = true
   setVercelStatus('Deploying…', 'busy')
@@ -184,10 +189,11 @@ async function deployFiles() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        deploymentName: deploymentName || undefined,
-        projectId: projectId || undefined,
-        subdomain: subdomain || undefined,
-        teamId: teamId || undefined,
+        deploymentName: name,
+        projectId: lastProjectId || undefined,
+        subdomain: name,
+        teamId: lastTeamId || undefined,
+        customText: message || undefined,
       }),
     })
 
@@ -195,6 +201,10 @@ async function deployFiles() {
     if (!res.ok) {
       throw new Error(payload.error || 'Failed to deploy.')
     }
+
+    // Store IDs from response for next deployment
+    if (payload.projectId) lastProjectId = payload.projectId
+    if (payload.teamId) lastTeamId = payload.teamId
 
     vercelDeployOutput.textContent = JSON.stringify(payload, null, 2)
     setVercelStatus('Success')
